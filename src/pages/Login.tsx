@@ -2,17 +2,27 @@ import { supabase } from "../lib/supabase";
 
 function Login() {
 const handleGoogleLogin = async () => {
-const { error } = await supabase.auth.signInWithOAuth({
-provider: "google",
-options: {
-redirectTo: window.location.origin,
-},
-});
+const redirectUrl =
+window.location.origin + "/auth/callback";
 
+
+const { error } =
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: redirectUrl,
+    },
+  });
 
 if (error) {
-  console.error("GOOGLE LOGIN ERROR:", error);
-  alert("Unable to sign in with Google.");
+  console.error(
+    "GOOGLE LOGIN ERROR:",
+    error
+  );
+
+  alert(
+    "Unable to sign in with Google."
+  );
 }
 
 
@@ -40,7 +50,7 @@ boxSizing: "border-box",
 }}
 > <p>BEST COUTURE</p>
 
-
+```
     <h1
       style={{
         fontSize: "36px",
@@ -50,8 +60,13 @@ boxSizing: "border-box",
       Welcome Back
     </h1>
 
-    <p style={{ marginBottom: "30px" }}>
-      Sign in to manage your orders and continue shopping.
+    <p
+      style={{
+        marginBottom: "30px",
+      }}
+    >
+      Sign in to manage your orders
+      and continue shopping.
     </p>
 
     <button
@@ -71,7 +86,6 @@ boxSizing: "border-box",
     </button>
   </div>
 </main>
-
 
 );
 }

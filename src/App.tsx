@@ -6,6 +6,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import MyOrders from "./pages/MyOrders";
+import AuthCallback from "./pages/AuthCallback";
 import { CartProvider } from "./context/CartContext";
 
 function Home() {
@@ -25,6 +26,10 @@ return ( <BrowserRouter> <CartProvider> <Navbar />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/login" element={<Login />} />
       <Route path="/my-orders" element={<MyOrders />} />
+      <Route
+        path="/auth/callback"
+        element={<AuthCallback />}
+      />
     </Routes>
   </CartProvider>
 </BrowserRouter>
