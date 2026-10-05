@@ -7,8 +7,48 @@ const navigate = useNavigate();
 
 useEffect(() => {
 const finishLogin = async () => {
-await supabase.auth.getSession();
+const code = new URLSearchParams(
+window.location.search
+).get("code");
 
+
+  if (!code) {
+    console.error(
+      "AUTH CALLBACK ERROR: No code found in URL"
+    );
+
+    navigate("/login", {
+      replace: true,
+    });
+
+    return;
+  }
+
+  const { error } =
+    await supabase.auth.exchangeCodeForSession(
+      code
+    );
+
+  if (error) {
+    console.error(
+      "AUTH CODE EXCHANGE ERROR:",
+      error
+    );
+
+    alert(
+      "Unable to complete sign in. Please try again."
+    );
+
+    navigate("/login", {
+      replace: true,
+    });
+
+    return;
+  }
+
+  console.log(
+    "GOOGLE LOGIN SUCCESSFUL"
+  );
 
   navigate("/", {
     replace: true,
@@ -32,7 +72,7 @@ textAlign: "center",
 }}
 > <div> <p>BEST COUTURE</p>
 
-```
+
     <h1>Signing you in...</h1>
 
     <p>Please wait a moment.</p>
