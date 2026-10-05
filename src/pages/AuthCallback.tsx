@@ -1,40 +1,58 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 function AuthCallback() {
   const navigate = useNavigate();
+  const ranRef = useRef(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    console.log("CALLBACK URL:", window.location.href);
+    // Make sure the one-time code is only used once
+    if (ranRef.current) return;
+    ranRef.current = true;
 
-    let done = false;
+    const finishLogin = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const urlError = params.get("error_description") || params.get("error");
 
-    const finish = (session: unknown) => {
-      if (done) return;
-      done = true;
-      console.log("CALLBACK FINISHED, session:", !!session);
-      navigate(session ? "/" : "/login", { replace: true });
-    };
+      console.log("CALLBACK URL:", window.location.href);
+      console.log(
+        "VERIFIER KEYS IN STORAGE:",
+        Object.keys(localStorage).filter((key) => key.includes("code-verifier"))
+      );
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("AUTH EVENT:", event, !!session);
-        if (event === "SIGNED_IN" && session) finish(session);
+      if (urlError) {
+        console.error("OAUTH ERROR IN URL:", urlError);
+        setErrorMessage(urlError);
+        return;
       }
-    );
 
-    supabase.auth.getSession().then(({ data, error }) => {
-      console.log("SESSION AT CALLBACK:", data.session, error);
-      if (data.session) finish(data.session);
-    });
+      const { data: existing } = await supabase.auth.getSession();
+      if (existing.session) {
+        navigate("/", { replace: true });
+        return;
+      }
 
-    const timeout = setTimeout(() => finish(null), 8000);
+      if (!code) {
+        setErrorMessage("No sign-in code was found in the URL.");
+        return;
+      }
 
-    return () => {
-      listener.subscription.unsubscribe();
-      clearTimeout(timeout);
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error("CODE EXCHANGE ERROR:", error.message, error);
+        setErrorMessage(error.message);
+        return;
+      }
+
+      console.log("LOGIN SUCCESSFUL");
+      navigate("/", { replace: true });
     };
+
+    finishLogin();
   }, [navigate]);
 
   return (
@@ -50,8 +68,19 @@ function AuthCallback() {
     >
       <div>
         <p>BEST COUTURE</p>
-        <h1>Signing you in...</h1>
-        <p>Please wait a moment.</p>
+
+        {errorMessage ? (
+          <>
+            <h1>Sign in failed</h1>
+            <p>{errorMessage}</p>
+            <Link to="/login">Back to Sign In</Link>
+          </>
+        ) : (
+          <>
+            <h1>Signing you in...</h1>
+            <p>Please wait a moment.</p>
+          </>
+        )}
       </div>
     </main>
   );
