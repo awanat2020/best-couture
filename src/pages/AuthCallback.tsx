@@ -1,28 +1,60 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
-function Login() {
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+function AuthCallback() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log("CALLBACK URL:", window.location.href);
+
+    let done = false;
+
+    const finish = (session: unknown) => {
+      if (done) return;
+      done = true;
+      console.log("CALLBACK FINISHED, session:", !!session);
+      navigate(session ? "/" : "/login", { replace: true });
+    };
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("AUTH EVENT:", event, !!session);
+        if (event === "SIGNED_IN" && session) finish(session);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      console.log("SESSION AT CALLBACK:", data.session, error);
+      if (data.session) finish(data.session);
     });
 
-    if (error) {
-      console.error("GOOGLE LOGIN ERROR:", error);
-      alert("Could not start Google sign in. Please try again.");
-    }
-  };
+    const timeout = setTimeout(() => finish(null), 8000);
+
+    return () => {
+      listener.subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [navigate]);
 
   return (
-    <main style={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", padding: "60px 20px", textAlign: "center" }}>
+    <main
+      style={{
+        minHeight: "70vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "60px 20px",
+        textAlign: "center",
+      }}
+    >
       <div>
-        <h1>Sign in</h1>
-        <button onClick={handleGoogleLogin}>Continue with Google</button>
+        <p>BEST COUTURE</p>
+        <h1>Signing you in...</h1>
+        <p>Please wait a moment.</p>
       </div>
     </main>
   );
 }
 
-export default Login;
+export default AuthCallback;
